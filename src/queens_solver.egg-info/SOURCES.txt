@@ -1,0 +1,13 @@
+LICENSE
+README.md
+pyproject.toml
+src/queens/__init__.py
+src/queens/cli.py
+src/queens/solver.py
+src/queens_solver.egg-info/PKG-INFO
+src/queens_solver.egg-info/SOURCES.txt
+src/queens_solver.egg-info/dependency_links.txt
+src/queens_solver.egg-info/entry_points.txt
+src/queens_solver.egg-info/requires.txt
+src/queens_solver.egg-info/top_level.txt
+tests/test_solver.py

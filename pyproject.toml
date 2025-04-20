@@ -1,0 +1,16 @@
+[project]
+name = "queens_game"
+version = "0.1.0"
+description = "Solver + Streamlit app for the Queens puzzle (diagonal distance 1)."
+authors = [{ name = "Tu Nombre", email = "tucorreo@example.com" }]
+requires-python = ">=3.9"
+dependencies = [
+    "streamlit>=1.25",
+    "pandas>=1.4",
+]
+
+[project.scripts]
+queens = "queens.cli:main"
+
+[tool.black]
+line-length = 88
