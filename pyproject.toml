@@ -1,16 +1,50 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "queens_game"
+name = "queens-solver"
 version = "0.1.0"
-description = "Solver + Streamlit app for the Queens puzzle (diagonal distance 1)."
-authors = [{ name = "Tu Nombre", email = "tucorreo@example.com" }]
+description = "Solver y app visual para el puzzle Queens (diagonal adyacente)"
+readme = "README.md"
 requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+  { name = "Leonardo Vera", email = "ray.leonardo.vera@gmail.com" }
+]
+keywords = ["chess", "queens", "solver", "puzzle", "streamlit"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent"
+]
 dependencies = [
-    "streamlit>=1.25",
-    "pandas>=1.4",
+  "streamlit>=1.25",
+  "pandas>=1.4"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "black",
+  "isort"
 ]
 
 [project.scripts]
 queens = "queens.cli:main"
 
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.black]
 line-length = 88
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
