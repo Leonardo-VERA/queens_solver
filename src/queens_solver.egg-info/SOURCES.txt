@@ -1,6 +1,7 @@
 LICENSE
 README.md
 pyproject.toml
+setup.py
 src/queens/__init__.py
 src/queens/cli.py
 src/queens/solver.py

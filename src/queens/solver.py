@@ -1,5 +1,6 @@
-from collections import defaultdict
 import copy
+from collections import defaultdict
+
 
 # ────────────────────────────────────────────────────────────────────
 #  Función auxiliar: convierte lista[str] -> (n, dict[color, celdas])
@@ -25,8 +26,8 @@ class QueensSolver:
 
         self.filas = set()
         self.cols = set()
-        self.asignadas = {}        # color → (r,c)
-        self.snap_pila = []        # para deshacer
+        self.asignadas = {}  # color → (r,c)
+        self.snap_pila = []  # para deshacer
 
     # ───────────  ataques  ───────────
     def _ataca(self, r, c):
@@ -94,7 +95,8 @@ class QueensSolver:
     # ───────────  búsqueda  ───────────
     def _color_MRV(self):
         return min(
-            (len(dom), col) for col, dom in self.dom.items()
+            (len(dom), col)
+            for col, dom in self.dom.items()
             if col not in self.asignadas
         )[1]
 

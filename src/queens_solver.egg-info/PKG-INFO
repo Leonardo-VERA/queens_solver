@@ -1,9 +1,49 @@
 Metadata-Version: 2.4
 Name: queens-solver
 Version: 0.1.0
-Summary: Solver y app Streamlit para el puzzle Queens (diagonal=1)
+Summary: Solver y app visual para el puzzle Queens (diagonal adyacente)
+Author-email: Leonardo Vera <ray.leonardo.vera@gmail.com>
+License: MIT
+Keywords: chess,queens,solver,puzzle,streamlit
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
 Requires-Python: >=3.9
+Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: streamlit>=1.25
 Requires-Dist: pandas>=1.4
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: black; extra == "dev"
+Requires-Dist: isort; extra == "dev"
 Dynamic: license-file
+
+# ♕ queens-solver
+
+A visual solver for the **Queens Puzzle** with custom rules:  
+> Two queens attack each other if they share the same row, column, or are **adjacent diagonally** (only distance = 1).
+
+Includes:
+- 🧠 A fast backtracking solver with constraint propagation.
+- 🖥️ A visual interface with [Streamlit](https://streamlit.io).
+- 🧪 Unit tests and GitHub CI workflow.
+- 🐍 Easy to install, easy to extend.
+
+---
+
+## ✨ Demo
+
+<img src="https://raw.githubusercontent.com/Leonardo-VERA/queens-solver/main/docs/demo_screenshot.png" width="600"/>
+
+---
+
+## 📦 Installation
+
+```bash
+# Clone the repo
+git clone https://github.com/Leonardo-VERA/queens-solver.git
+cd queens-solver
+
+# Install dependencies (editable mode with dev tools)
+pip install -e .[dev]

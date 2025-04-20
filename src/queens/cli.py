@@ -1,4 +1,6 @@
-import argparse, sys
+import argparse
+import sys
+
 from .solver import QueensSolver
 
 
@@ -22,7 +24,7 @@ def main(argv=None):
 
     n = len(board)
     grid = [["·"] * n for _ in range(n)]
-    for (r, c) in sol.values():
+    for r, c in sol.values():
         grid[r][c] = "Q"
     print("\n".join(" ".join(row) for row in grid))
 

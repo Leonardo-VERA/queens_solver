@@ -1,5 +1,4 @@
-
-'''
+"""
 # queens_app.py
 import streamlit as st
 import pandas as pd
@@ -56,8 +55,8 @@ if st.button("Resolver", disabled=not valido):
 
         st.success("¡Solución encontrada!")
         grid = "\n".join(" ".join(fila) for fila in tablero)
-        st.text(grid) 
+        st.text(grid)
 
-        
-        
-'''
+
+
+"""
