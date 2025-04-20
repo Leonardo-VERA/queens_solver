@@ -29,7 +29,7 @@ Place **one queen per color region** on the board such that no queens attack eac
 
 > You can run the visual version locally or deploy it online (Streamlit Cloud)
 
-<img src="https://raw.githubusercontent.com/Leonardo-VERA/queens_solver/docs/demo_screenshot.png" width="600"/>
+<img src="https://github.com/Leonardo-VERA/queens_solver/blob/main/docs/demo_screenshot.png" width="600"/>
 
 ---
 
