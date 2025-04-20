@@ -2,3 +2,7 @@
 -e .
 streamlit>=1.25
 pandas
+numpy
+streamlit-drawable-canvas
+opencv-python-headless
+scikit-learn
