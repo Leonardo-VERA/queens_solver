@@ -1,8 +1,6 @@
-# requirements.txt
+# requirements.txt (used by Streamlit Community Cloud and CI)
 -e .
-streamlit>=1.25
-pandas
+streamlit>=1.51
 numpy
-streamlit-drawable-canvas
 opencv-python-headless
-scikit-learn
+pillow

@@ -1,0 +1,120 @@
+.qe {
+  --wall: #1d1d1f;
+  --thin: rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.qe-palette {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.qe-swatch {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  transition: transform 0.08s ease;
+}
+
+.qe-swatch.eraser {
+  background: repeating-linear-gradient(45deg, #f3f3f3 0 5px, #dcdcdc 5px 10px);
+  color: #555;
+  font-weight: 700;
+}
+
+.qe-swatch.active {
+  outline: 3px solid var(--st-primary-color, #ff4b4b);
+  outline-offset: 2px;
+  transform: scale(1.1);
+}
+
+.qe-grid {
+  display: grid;
+  width: min(100%, 30rem);
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  border: 3px solid var(--wall);
+  border-radius: 4px;
+  overflow: hidden;
+  background: #fff;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.qe-cell {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border-right: 1px solid var(--thin);
+  border-bottom: 1px solid var(--thin);
+}
+
+.qe-cell.wall-r { border-right: 3px solid var(--wall); }
+.qe-cell.wall-b { border-bottom: 3px solid var(--wall); }
+.qe-cell.last-col { border-right: 0; }
+.qe-cell.last-row { border-bottom: 0; }
+
+.qe-cell.empty {
+  background: repeating-linear-gradient(45deg, #f6f6f6 0 6px, #ebebeb 6px 12px);
+}
+
+.qe-cell svg {
+  display: none;
+  width: 64%;
+  height: 64%;
+  fill: #141414;
+}
+
+.qe-cell.q svg {
+  display: block;
+  animation: qe-pop 0.18s ease-out;
+}
+
+@keyframes qe-pop {
+  from { transform: scale(0.3); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.qe-status {
+  min-height: 1.4em;
+  font-weight: 600;
+  text-align: center;
+}
+
+.qe-status.success { color: #1f9d55; }
+.qe-status.error { color: #e0393e; }
+.qe-status.warning { color: #c77c02; }
+.qe-status.info,
+.qe-status.pending { color: var(--st-text-color, #31333f); opacity: 0.75; }
+
+.qe-bar {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.qe-btn {
+  font: inherit;
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--st-button-radius, 0.5rem);
+  border: 1px solid var(--st-border-color, rgba(49, 51, 63, 0.2));
+  background: var(--st-secondary-background-color, #f0f2f6);
+  color: var(--st-text-color, #31333f);
+  cursor: pointer;
+}
+
+.qe-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
