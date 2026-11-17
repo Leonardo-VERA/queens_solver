@@ -12,6 +12,7 @@ Options:
     --delay S      seconds to wait with --once (default 3)
     --debug        save the screenshot and what was detected in ./debug/
     --hide-after S hide the overlay automatically after S seconds (default 30)
+    --opacity O    overlay opacity, 0.2 (very light) to 1 (solid), default 0.5
 
 See docs/overlay_windows.md for the installation steps.
 """
@@ -106,11 +107,12 @@ class HotkeyThread(threading.Thread):
 
 # ── transparent, click-through overlay ───────────────────────────────────────
 class Overlay:
-    def __init__(self, root: tk.Tk):
+    def __init__(self, root: tk.Tk, opacity: float = 0.5):
         self.root = root
         root.overrideredirect(True)
         root.attributes("-topmost", True)
         root.attributes("-transparentcolor", KEY_COLOR)
+        root.attributes("-alpha", opacity)  # whole overlay semi-transparent
         root.configure(bg=KEY_COLOR)
         self.canvas = tk.Canvas(root, bg=KEY_COLOR, highlightthickness=0)
         self.canvas.pack(fill="both", expand=True)
@@ -119,16 +121,35 @@ class Overlay:
         self._click_through()
         root.withdraw()
 
+    def _hwnd(self):
+        return user32.GetParent(self.root.winfo_id()) or self.root.winfo_id()
+
     def _click_through(self):
         GWL_EXSTYLE = -20
         WS_EX_LAYERED, WS_EX_TRANSPARENT = 0x00080000, 0x00000020
         WS_EX_TOOLWINDOW, WS_EX_NOACTIVATE = 0x00000080, 0x08000000
-        hwnd = user32.GetParent(self.root.winfo_id()) or self.root.winfo_id()
+        hwnd = self._hwnd()
         style = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
         user32.SetWindowLongW(
             hwnd, GWL_EXSTYLE,
             style | WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
         )
+
+    def _place(self, left: int, top: int, width: int, height: int):
+        """Put the window exactly over the monitor, in real screen pixels.
+
+        Done with the Win32 API: in a Tk geometry string, "-160" would mean
+        "160 px from the bottom edge", which broke monitors with negative top.
+        """
+        HWND_TOPMOST = wintypes.HWND(-1)
+        SWP_NOACTIVATE, SWP_SHOWWINDOW = 0x0010, 0x0040
+        user32.SetWindowPos(self._hwnd(), HWND_TOPMOST, left, top, width, height,
+                            SWP_NOACTIVATE | SWP_SHOWWINDOW)
+
+    def window_rect(self) -> tuple[int, int, int, int]:
+        rect = wintypes.RECT()
+        user32.GetWindowRect(self._hwnd(), ctypes.byref(rect))
+        return rect.left, rect.top, rect.right, rect.bottom
 
     def hide(self):
         if self.hide_job:
@@ -141,24 +162,30 @@ class Overlay:
     def show(self, monitor: dict, result: ScreenSolution, hide_after: float):
         self.canvas.delete("all")
         w, h, left, top = monitor["width"], monitor["height"], monitor["left"], monitor["top"]
-        self.root.geometry(f"{w}x{h}{left:+d}{top:+d}")
+        self.root.geometry(f"{w}x{h}+{left}+{top}")  # "+-160" = negative coordinate
 
+        # Status label just above the board (below it if there is no room),
+        # never on top of the cells.
+        anchor, label_x, label_y = "nw", 40, 40
         if result.ok:
-            radius = result.cell_size * 0.36
-            width = max(3, int(result.cell_size * 0.09))
+            cell = result.cell_size
+            radius = cell * 0.36
+            width = max(2, int(cell * 0.05))
             for x, y in result.queens:
                 self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius,
                                         outline=RING_COLOR, width=width)
                 self.canvas.create_text(x, y, text="♛", fill=RING_COLOR,
-                                        font=("Segoe UI Symbol", max(10, int(result.cell_size * 0.32))))
+                                        font=("Segoe UI Symbol", max(9, int(cell * 0.24))))
             xs = [q[0] for q in result.queens]
             ys = [q[1] for q in result.queens]
-            label_x, label_y = min(xs) - result.cell_size / 2, min(ys) - result.cell_size * 0.9
-        else:
-            label_x, label_y = 40, 40
+            board_left, board_top, board_bottom = min(xs) - cell / 2, min(ys) - cell / 2, max(ys) + cell / 2
+            if board_top > 50:
+                anchor, label_x, label_y = "sw", board_left, board_top - 10
+            else:
+                anchor, label_x, label_y = "nw", board_left, board_bottom + 10
         text = ("♛ " if result.ok else "✖ ") + result.message + "   ·   Ctrl+Alt+H : cacher"
-        item = self.canvas.create_text(label_x + 10, max(10, label_y), text=text, anchor="nw",
-                                       fill="white", font=("Segoe UI", 12, "bold"))
+        item = self.canvas.create_text(label_x + 8, label_y, text=text, anchor=anchor,
+                                       fill="white", font=("Segoe UI", 10, "bold"))
         x1, y1, x2, y2 = self.canvas.bbox(item)
         self.canvas.create_rectangle(x1 - 8, y1 - 5, x2 + 8, y2 + 5,
                                      fill="#1f9d55" if result.ok else "#c0392b", outline="")
@@ -169,6 +196,7 @@ class Overlay:
         self.root.attributes("-topmost", True)
         self.root.update_idletasks()
         self._click_through()
+        self._place(left, top, w, h)
         if game_window:  # keep the focus on Chrome, not on the overlay
             user32.SetForegroundWindow(game_window)
         if hide_after > 0:
@@ -203,6 +231,9 @@ def solve_now(overlay: Overlay, args) -> None:
     if args.debug:
         save_debug(rgb, result)
     overlay.show(monitor, result, args.hide_after)
+    if args.debug:
+        print(f"  écran capturé : x={monitor['left']} y={monitor['top']} "
+              f"{monitor['width']}x{monitor['height']}  |  fenêtre overlay : {overlay.window_rect()}")
 
 
 def main():
@@ -211,10 +242,11 @@ def main():
     parser.add_argument("--delay", type=float, default=3.0)
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--hide-after", type=float, default=30.0)
+    parser.add_argument("--opacity", type=float, default=0.5)
     args = parser.parse_args()
 
     root = tk.Tk()
-    overlay = Overlay(root)
+    overlay = Overlay(root, opacity=min(1.0, max(0.2, args.opacity)))
 
     if args.once:
         print(f"Capture dans {args.delay:.0f} s : affiche la grille Queens à l'écran…")

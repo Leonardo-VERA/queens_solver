@@ -96,6 +96,13 @@ python tools\queens_overlay.py
 
 La console affiche `Prêt.` : laisse-la ouverte (tu peux la réduire).
 
+**Transparence** : l'affichage est à 50 % par défaut. Plus discret ou plus
+visible avec `--opacity` (de `0.2` très léger à `1` opaque) :
+
+```powershell
+python tools\queens_overlay.py --opacity 0.35
+```
+
 ## 5. Jouer
 
 1. Ouvre Queens dans Chrome. **La grille doit être entièrement visible**
