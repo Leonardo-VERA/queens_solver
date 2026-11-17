@@ -106,6 +106,37 @@ def render_board(board, cell=48, dark=False, queens=(), page=True, seed=0):
     return out
 
 
+def render_screen(board, size=(2560, 1440), cell=60, dark=False, seed=0):
+    """Full desktop screenshot: web page with cards, text and the board.
+
+    Returns (image, origin) where origin is the board's top-left cell corner.
+    """
+    rng = random.Random(seed)
+    width, height = size
+    bg, card, ink = ((27, 31, 35), (40, 44, 50), (220, 220, 220)) if dark else (
+        (244, 242, 238), (255, 255, 255), (40, 40, 40))
+    screen = np.full((height, width, 3), bg, np.uint8)
+    cv2.rectangle(screen, (0, 0), (width, 70), card, -1)  # browser / site header
+    cv2.putText(screen, "linkedin-like page", (30, 48), cv2.FONT_HERSHEY_SIMPLEX, 1, ink, 2)
+    for i in range(3):  # side cards (square-ish, but plain)
+        y = 120 + i * 330
+        cv2.rectangle(screen, (60, y), (360, y + 300), card, -1)
+        cv2.rectangle(screen, (60, y), (360, y + 300), (200, 200, 200), 1)
+        cv2.putText(screen, f"card {i}", (80, y + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, ink, 2)
+    img = render_board(board, cell=cell, dark=dark, page=False, seed=seed)
+    x0 = rng.randrange(700, width - img.shape[1] - 300)
+    y0 = rng.randrange(150, height - img.shape[0] - 100)
+    screen[y0 : y0 + img.shape[0], x0 : x0 + img.shape[1]] = img
+    # A small "example" board next to the real one, as on the LinkedIn page.
+    example = render_board(random_puzzle(5, rng), cell=max(20, cell // 2), dark=dark,
+                           page=False, seed=seed + 1)
+    ex, ey = x0 + img.shape[1] + 40, y0 + img.shape[0] - example.shape[0]
+    if ex + example.shape[1] < width:
+        screen[ey : ey + example.shape[0], ex : ex + example.shape[1]] = example
+    cv2.putText(screen, "Queens #321", (x0, y0 - 30), cv2.FONT_HERSHEY_SIMPLEX, 1.2, ink, 3)
+    return screen, (x0 + 3, y0 + 3)  # render_board adds a 3 px frame
+
+
 def photo_of(img, seed=0, tilt=0.08, blur=1.2, noise=6.0):
     """Simulate a phone photo of a screen: perspective, blur, noise, lighting."""
     rng = np.random.default_rng(seed)

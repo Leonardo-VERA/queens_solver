@@ -35,6 +35,7 @@ class BoardReading:
     grid: tuple[float, float, float, float]  # x0, x1, y0, y1 of the grid in board_image
     found_outline: bool  # False -> no outline found, whole image was used
     color_margin: float  # >~1.5 means regions are clearly separated
+    transform: np.ndarray  # 3×3 perspective matrix: source image -> board_image
     warnings: list[str] = field(default_factory=list)
 
 
@@ -61,16 +62,18 @@ def read_board(image: np.ndarray, n: int | None = None) -> BoardReading:
     # Every (outline, grid size) pair is judged the same way: a correct reading
     # has single-coloured cells (uniformity ~1) that fall into n well-separated
     # colour groups (margin > 1). Wrong outlines / sizes fail one or the other.
+    # Small bonus for detected outlines, larger ones first (the game board over
+    # e.g. the small "example" boards shown below it).
     best = None
-    for warped, found in _board_candidates(image):
+    for warped, transform, found, bonus in _board_candidates(image):
         # A detected outline hugs the board, so the grid must fill it.
         for _, size, grid in fit_grid(warped, n, top=3, margin=0.05 if found else 0.15):
             cells, uniformity = sample_cells(warped, size, grid)
             labels, margin = cluster_colors(cells.reshape(-1, 3), size)
-            quality = uniformity + 0.15 * min(margin, 2.0) + (0.05 if found else 0.0)
+            quality = uniformity + 0.15 * min(margin, 2.0) + bonus
             if best is None or quality > best[0]:
-                best = (quality, warped, found, size, grid, cells, labels, margin)
-    _, warped, found, size, grid, cells, labels, margin = best
+                best = (quality, warped, transform, found, size, grid, cells, labels, margin)
+    _, warped, transform, found, size, grid, cells, labels, margin = best
 
     board, colors = _label_board(labels.reshape(size, size), cells)
 
@@ -93,8 +96,20 @@ def read_board(image: np.ndarray, n: int | None = None) -> BoardReading:
         grid=grid,
         found_outline=found,
         color_margin=margin,
+        transform=transform,
         warnings=warnings,
     )
+
+
+def cell_centers(reading: BoardReading) -> np.ndarray:
+    """(n, n, 2) array of cell centres (x, y) in source-image coordinates."""
+    n = reading.n
+    x0, x1, y0, y1 = reading.grid
+    xs = x0 + (np.arange(n) + 0.5) * (x1 - x0) / n
+    ys = y0 + (np.arange(n) + 0.5) * (y1 - y0) / n
+    pts = np.stack(np.meshgrid(xs, ys), axis=-1).reshape(-1, 1, 2).astype(np.float32)
+    src = cv2.perspectiveTransform(pts, np.linalg.inv(reading.transform))
+    return src.reshape(n, n, 2)
 
 
 def draw_grid(reading: BoardReading) -> np.ndarray:
@@ -113,12 +128,17 @@ def draw_grid(reading: BoardReading) -> np.ndarray:
 # ──────────────────────────────────────────────────────────────────────────────
 #  1. Locate the board
 # ──────────────────────────────────────────────────────────────────────────────
-def _board_candidates(image: np.ndarray) -> list[tuple[np.ndarray, bool]]:
-    """Top-down board images to try: detected outlines + the whole image."""
-    out = [(_warp(image, quad), True) for quad in _find_quads(image)[:5]]
+def _board_candidates(image: np.ndarray):
+    """(top-down image, transform, outline found, bonus) per outline + whole image."""
+    quads = _find_quads(image)[:10]
+    out = []
+    if quads:
+        biggest = cv2.contourArea(quads[0])
+        for quad in quads:
+            out.append((*_warp(image, quad), True, 0.05 * cv2.contourArea(quad) / biggest))
     h, w = image.shape[:2]
     whole = np.array([[0, 0], [w - 1, 0], [w - 1, h - 1], [0, h - 1]], np.float32)
-    out.append((_warp(image, whole), False))
+    out.append((*_warp(image, whole), False, 0.0))
     return out
 
 
@@ -146,7 +166,8 @@ def _find_quads(image: np.ndarray) -> list[np.ndarray]:
         for cnt in contours:
             hull = cv2.convexHull(cnt)
             area = cv2.contourArea(hull)
-            if area < 0.03 * h * w:
+            # Small threshold: on a full-screen capture the board is a few % of it.
+            if area < 0.005 * h * w:
                 continue
             quad = _approx_quad(hull)
             if quad is None or not _is_squareish(quad):
@@ -156,10 +177,12 @@ def _find_quads(image: np.ndarray) -> list[np.ndarray]:
                 continue
             quads.append((cv2.contourArea(quad), quad))
 
+    # Near-identical outlines are kept apart on purpose: e.g. the board alone vs
+    # the board merged with its title above it. The quality score picks the best.
     quads.sort(key=lambda t: -t[0])
     unique: list[np.ndarray] = []
     for _, q in quads:
-        if all(np.abs(q - u).max() > 0.03 * max(h, w) for u in unique):
+        if all(np.abs(q - u).max() > 0.01 * max(h, w) for u in unique):
             unique.append(q)
     return unique
 
@@ -192,11 +215,11 @@ def _is_squareish(q: np.ndarray) -> bool:
     return 0.6 < ratio < 1.6
 
 
-def _warp(image: np.ndarray, quad: np.ndarray) -> np.ndarray:
+def _warp(image: np.ndarray, quad: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     s = WARP_SIZE
     dst = np.array([[0, 0], [s - 1, 0], [s - 1, s - 1], [0, s - 1]], np.float32)
     m = cv2.getPerspectiveTransform(quad.astype(np.float32), dst)
-    return cv2.warpPerspective(image, m, (s, s), flags=cv2.INTER_AREA)
+    return cv2.warpPerspective(image, m, (s, s), flags=cv2.INTER_AREA), m
 
 
 # ──────────────────────────────────────────────────────────────────────────────
