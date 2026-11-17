@@ -1,0 +1,6 @@
+# requirements-overlay.txt (Windows desktop overlay: tools/queens_overlay.py)
+-e .
+numpy
+opencv-python-headless
+pillow
+mss

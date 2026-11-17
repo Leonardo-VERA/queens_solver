@@ -69,6 +69,14 @@ lines → read each cell's color (ignoring queens/crosses drawn in the middle)
 
 ---
 
+## 🖥️ Desktop overlay (Windows)
+
+Play in Chrome, press **Ctrl+Alt+Q**: the queens are shown on top of the game
+board, you just double-click them. Setup and usage (in French):
+[docs/overlay_windows.md](docs/overlay_windows.md).
+
+---
+
 ## 🧠 Command-line solver (CLI)
 
 ```bash
@@ -116,7 +124,9 @@ queens_solver/
 │   └── board_editor/      ← in-browser grid editor (JS/CSS component)
 ├── examples/              ← Board samples
 ├── src/queens/            ← Solver and CLI
+│   ├── screen.py          ← solve straight from a screenshot
 │   └── vision/            ← Board recognition from images
+├── tools/                 ← Windows desktop overlay
 ├── tests/                 ← Unit tests (+ tests/data sample screenshot)
 ├── requirements.txt
 └── pyproject.toml

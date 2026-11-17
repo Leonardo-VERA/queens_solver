@@ -27,6 +27,12 @@ app = [
   "opencv-python-headless",
   "pillow"
 ]
+overlay = [
+  "numpy",
+  "opencv-python-headless",
+  "pillow",
+  "mss"
+]
 dev = [
   "pytest",
   "black",
