@@ -299,26 +299,59 @@ def sample_cells(img: np.ndarray, n: int, grid) -> tuple[np.ndarray, float]:
     cell's colour (~1 when the lattice is right, lower when cells straddle lines).
     """
     x0, x1, y0, y1 = grid
-    cw, ch = (x1 - x0) / n, (y1 - y0) / n
-    out = np.zeros((n, n, 3), np.float32)
-    uniform = np.zeros((n, n), np.float32)
-    for r in range(n):
-        for c in range(n):
-            cx0, cy0 = x0 + c * cw, y0 + r * ch
-            top, bottom = int(cy0 + 0.15 * ch), int(np.ceil(cy0 + 0.85 * ch))
-            left, right = int(cx0 + 0.15 * cw), int(np.ceil(cx0 + 0.85 * cw))
-            patch = img[top:bottom, left:right].astype(np.float32)
-            ph, pw = patch.shape[:2]
-            yy, xx = np.mgrid[0:ph, 0:pw]
-            # Ring: skip the middle, where queens / crosses are drawn.
-            inner = (np.abs(yy - ph / 2) < ph * 0.25) & (np.abs(xx - pw / 2) < pw * 0.25)
-            ring = patch[~inner]
-            # Ignore very dark pixels (lines, icons) when there is enough left.
-            light = ring[ring.sum(axis=1) > 150]
-            colour = np.median(light if len(light) > len(ring) // 4 else ring, axis=0)
-            out[r, c] = colour
-            uniform[r, c] = np.mean(np.linalg.norm(ring - colour, axis=1) < 25)
-    return out, float(uniform.mean())
+    # All cells at once (vectorised: this runs for every candidate outline and
+    # grid size, so it dominates the reading time on a phone).
+    ys, y_ok, y_inner = _cell_axis(y0, (y1 - y0) / n, n, img.shape[0])
+    xs, x_ok, x_inner = _cell_axis(x0, (x1 - x0) / n, n, img.shape[1])
+    # (n rows, n cols, patch h, patch w, 3)
+    patches = img[ys[:, None, :, None], xs[None, :, None, :]]
+    valid = y_ok[:, None, :, None] & x_ok[None, :, None, :]
+    # Ring: skip the middle, where queens / crosses are drawn.
+    inner = y_inner[:, None, :, None] & x_inner[None, :, None, :]
+    ring = (valid & ~inner).reshape(n * n, -1)
+    pixels = patches.reshape(n * n, -1, 3)
+    # Ignore very dark pixels (lines, icons) when there is enough left.
+    light = ring & (pixels.sum(axis=2, dtype=np.int32) > 150)
+    use_light = light.sum(axis=1) > ring.sum(axis=1) // 4
+    chosen = np.where(use_light[:, None], light, ring)
+    colour = _masked_median(pixels, chosen)
+    diff = pixels.astype(np.float32) - colour[:, None, :]
+    close = np.einsum("ijk,ijk->ij", diff, diff) < 25 * 25
+    uniform = (close & ring).sum(axis=1) / np.maximum(ring.sum(axis=1), 1)
+    return colour.reshape(n, n, 3), float(uniform.mean())
+
+
+def _cell_axis(start: float, step: float, n: int, limit: int):
+    """Pixel indices of the sampled band (15%–85%) of each cell along one axis.
+
+    Returns (indices, valid, inner) as (n, samples) arrays; ``inner`` marks
+    the middle half of the band. Big cells are sampled every few pixels
+    (~20 samples per band are plenty for a median and a uniformity ratio).
+    """
+    lo = [int(start + k * step + 0.15 * step) for k in range(n)]
+    hi = [min(int(np.ceil(start + k * step + 0.85 * step)), limit) for k in range(n)]
+    lengths = np.array([max(h - l, 0) for l, h in zip(lo, hi)])
+    longest = max(int(lengths.max()), 1)
+    pos = np.arange(0, longest, max(1, round(longest / 20)))[None, :]
+    valid = pos < lengths[:, None]
+    inner = np.abs(pos - lengths[:, None] / 2) < lengths[:, None] * 0.25
+    idx = np.clip(np.array(lo)[:, None] + pos, 0, limit - 1)
+    return idx, valid, inner
+
+
+def _masked_median(values: np.ndarray, mask: np.ndarray) -> np.ndarray:
+    """Per-row, per-channel median of uint8 ``values`` (rows, k, 3) over ``mask``.
+
+    Exact, via 256-bin histograms (linear time, no sorting).
+    """
+    rows = len(values)
+    keys = (np.arange(rows * 3).reshape(rows, 1, 3) * 256 + values)[mask]
+    hist = np.bincount(keys.ravel(), minlength=rows * 3 * 256).reshape(rows, 3, 256)
+    cum = hist.cumsum(axis=2)
+    count = np.maximum(mask.sum(axis=1), 1)[:, None, None]
+    lo = (cum <= (count - 1) // 2).sum(axis=2)  # value of the lower middle element
+    hi = (cum <= count // 2).sum(axis=2)
+    return ((lo + hi) / 2).astype(np.float32)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
