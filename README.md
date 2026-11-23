@@ -75,6 +75,12 @@ Play in Chrome, press **Ctrl+Alt+Q**: the queens are shown on top of the game
 board, you just double-click them. Setup and usage (in French):
 [docs/overlay_windows.md](docs/overlay_windows.md).
 
+## 📱 Android bubble
+
+Same idea on Android: a floating ♛ bubble over the LinkedIn app; tap it and
+the queens are circled on the board. Personal APK, same Python code embedded
+with Chaquopy. Install and usage (in French): [docs/android.md](docs/android.md).
+
 ---
 
 ## 🧠 Command-line solver (CLI)
@@ -127,6 +133,7 @@ queens_solver/
 │   ├── screen.py          ← solve straight from a screenshot
 │   └── vision/            ← Board recognition from images
 ├── tools/                 ← Windows desktop overlay
+├── android/               ← Android bubble app (Kotlin + Chaquopy)
 ├── tests/                 ← Unit tests (+ tests/data sample screenshot)
 ├── requirements.txt
 └── pyproject.toml
