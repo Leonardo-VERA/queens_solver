@@ -276,7 +276,8 @@ class QueensService : Service() {
         private const val TAG = "QueensService"
         private const val CHANNEL_ID = "queens"
         private const val NOTIFICATION_ID = 1
-        private const val CAPTURE_DELAY_MS = 250L
+        // Time for the hidden bubble to leave the mirrored screen (7+ frames at 60 Hz).
+        private const val CAPTURE_DELAY_MS = 120L
         private const val HIDE_AFTER_MS = 30_000L
         private const val MARKERS_OPACITY = 0.6f
 
